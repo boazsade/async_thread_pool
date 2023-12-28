@@ -5,7 +5,7 @@
 
 
 auto just_because(int me) -> void {
-    auto my_thread = std::this_thread::get_id(); /*< get ID of initial thread >*/
+    auto my_thread = std::this_thread::get_id();
     auto print_details = [me, my_thread](const char* msg) -> void {
 	    std::ostringstream buffer;
         buffer << "fiber " << me << msg << my_thread << '\n';
@@ -17,8 +17,8 @@ auto just_because(int me) -> void {
 	    print_details(" started on thread ");
         for ( auto i = 0; i < 100; ++i) { /*< loop ten times >*/
             async::suspend_exec();
-            auto new_thread = std::this_thread::get_id(); /*< get ID of current thread >*/
-            if ( new_thread != my_thread) { /*< test if fiber was migrated to another thread >*/
+            auto new_thread = std::this_thread::get_id();
+            if ( new_thread != my_thread) {
                 my_thread = new_thread;
                 print_details(" switched to thread ");
             }
