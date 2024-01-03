@@ -23,16 +23,55 @@ public:
 
         template<typename F>
         requires std::is_invocable_v<F>
-        auto post(F&& operation) -> void {
-            boost::fibers::fiber([this, f = std::move(operation)] () {
-                ++counter;
-			    f();
-                --counter;
-            }).detach();
+        auto post(F&& operation) ->  boost::fibers::future<typename std::result_of<F()>::type> {
+            using result_type = typename std::result_of<F()>::type;
+            
+            if constexpr (std::is_void_v<result_type>) {
+                return invoke_void_f(std::move(operation));
+            } else {
+                return invoke_other(std::move(operation));
+            }
         }
         
 private:
     auto start_background() -> void;
+
+    template<typename result_type, typename F>
+    auto invoke_op(F&& op) -> boost::fibers::future<result_type> {
+        using future_type = boost::fibers::future<result_type>;
+
+        boost::fibers::packaged_task<result_type()> pt(std::move(op));
+
+        future_type result{pt.get_future()};
+        boost::fibers::fiber { 
+            std::move(pt) 
+        }.detach();
+
+        return result;
+    }
+
+    template<typename F>
+    auto invoke_void_f(F&& operation) -> boost::fibers::future<void> {
+        auto wrapper = [this, op = std::move(operation)]() {
+            ++counter;
+            op();
+            --counter;
+        };
+
+        return invoke_op<void>(std::move(wrapper));
+    }
+
+    template<typename F>
+    auto invoke_other(F&& operation) -> boost::fibers::future<typename std::result_of<F()>::type> {
+        auto wrapper = [this, op = std::move(operation)]() {
+            ++counter;
+            auto r = op();
+            --counter;
+            return r;
+        };
+
+        return invoke_op<typename std::result_of<F()>::type>(std::move(wrapper));
+    }
 
 private:
     struct tasks_counter {
