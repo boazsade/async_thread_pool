@@ -1,7 +1,7 @@
 # async_thread_pool
 This is a small boost fiber based thread pool that allow to execute tasks (on fiber) in multi worker threads
 
-## Work Stealing Pool
+## Task Execution
 This pool is based on the idea that the tasks can move between threads.
 The main flow:
 - Start a new task that execute a work.
@@ -10,7 +10,8 @@ The main flow:
 - The pool can go down once we don't have any tasks running.
 A simple usage of this is:
 ```cpp
-#include "async_pool/work_steal_pool.h"
+#include "async_pool/task_executer.h"
+#inclde "someother_task_based_code.h"
 #include <chrono>
 #include <iostream>
 
@@ -26,20 +27,15 @@ auto my_work(int a, int b, double d) -> void {
 }
 
 auto main(int, char**) -> int {
-    async::work_stealing_pool pool;
+    async::task_executer pool;
     for (auto i = 0; i < 1'000; i++) {
         pool.post([]() {
             my_work(i, i + i * 2 + 5);
         });
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    std::cout << "waiting to sync with other threads" << std::endl;
-    pool.sync();    // just let the other threads in the pool do something..
-    std::cout << "finish executing all tasks\n";
-    td::cout << "waiting for the tasks to complete" << std::endl;
-    std::cout << "finish waiting for all the tasks" << std::endl;
-    pool.stop();    // and stop, since we don't have more work to commit
+    std::cout << "finish committing all tasks\n";
+    pool.stop();    // this is not really required, but this is how we will see the next printout
     std::cout << "we are done with all of it" <<std::endl;
 }
 
