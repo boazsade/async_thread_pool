@@ -8,6 +8,8 @@
 
 namespace async {
 
+template<typename R>
+using future_type = boost::fibers::future<R>;
 class task_executer {
 public:
     explicit task_executer(std::size_t tc = std::thread::hardware_concurrency());
@@ -23,7 +25,7 @@ public:
 
         template<typename F>
         requires std::is_invocable_v<F>
-        auto post(F&& operation) ->  boost::fibers::future<typename std::result_of<F()>::type> {
+        auto post(F&& operation) ->  future_type<typename std::result_of<F()>::type> {
             using result_type = typename std::result_of<F()>::type;
             
             if constexpr (std::is_void_v<result_type>) {
@@ -37,7 +39,7 @@ private:
     auto start_background() -> void;
 
     template<typename result_type, typename F>
-    auto invoke_op(F&& op) -> boost::fibers::future<result_type> {
+    auto invoke_op(F&& op) -> future_type<result_type> {
         using future_type = boost::fibers::future<result_type>;
 
         boost::fibers::packaged_task<result_type()> pt(std::move(op));
@@ -51,7 +53,7 @@ private:
     }
 
     template<typename F>
-    auto invoke_void_f(F&& operation) -> boost::fibers::future<void> {
+    auto invoke_void_f(F&& operation) ->future_type<void> {
         auto wrapper = [this, op = std::move(operation)]() {
             ++counter;
             op();
@@ -62,7 +64,7 @@ private:
     }
 
     template<typename F>
-    auto invoke_other(F&& operation) -> boost::fibers::future<typename std::result_of<F()>::type> {
+    auto invoke_other(F&& operation) -> future_type<typename std::result_of<F()>::type> {
         auto wrapper = [this, op = std::move(operation)]() {
             ++counter;
             auto r = op();
