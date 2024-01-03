@@ -76,7 +76,7 @@ auto main(int argc , char** argv) -> int {
 
     std::cout << "main thread started " << std::this_thread::get_id() << std::endl;
     async::task_executer pool{tc};
-    std::vector<boost::fibers::future<std::uint64_t>> counters;
+    std::vector<async::future_type<std::uint64_t>> counters;
     for (auto g = generate(); g.has_value(); g = generate()) {
         counters.push_back(std::move(pool.post([val = *g, fn = argv[1]]() {
             return just_because(val, fn);

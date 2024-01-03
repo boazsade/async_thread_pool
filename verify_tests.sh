@@ -13,7 +13,8 @@ if [ ! -f $input_file ]; then
 fi
 
 function do_test {
-	timeout -s 9 -k 20s 20s  ./build/${build_type}/tests/test_pool $input_file > $output_file  2> /dev/null
+	app_name=$1
+	timeout -s 9 -k 20s 20s $app_name  $input_file > $output_file  2> /dev/null
 	if [ $? -ne 0 ]; then
 		echo -n "critical error running the app"
 		return 1
@@ -72,9 +73,10 @@ echo "building $build_type"
 	exit 1
 }
 
+echo "running the test without result returning from a function"
 for i in {1..100}; do
 	echo -n "running test number $i: "
-	output=$(do_test)
+	output=$(do_test ./build/${build_type}/tests/test_pool)
 	if [ $? -ne 0 ]; then
 		echo -e " \e[0;31mFAIL\e[0m: $output"
 		rm -f ${output_file}
@@ -86,4 +88,19 @@ for i in {1..100}; do
 done
 
 echo "successfully finish 100 tests"
+
+echo "running tests with the using result from a function"
+for i in {1..100}; do
+	echo -n "running test number $i: "
+	output=$(do_test ./build/${build_type}/tests/test_with_result)
+	if [ $? -ne 0 ]; then
+		echo -e " \e[0;31mFAIL\e[0m: $output"
+		rm -f ${output_file}
+		exit 1
+	else
+		echo -e " \e[0;32mOK\e[0m"
+		rm -f $output_file
+	fi
+done
+
 exit 0
